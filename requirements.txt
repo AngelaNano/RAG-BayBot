@@ -4,6 +4,8 @@ streamlit # builds the frontend
 plotly # draws the charts
 pandas # handles data tables
 sentence-transformers # converts text to vectors ( for RAG )
-transformers # Hugging Face AI models
-torch #powers the AI under the hood
 python-dotenv # reads you.env secret keys
+scikit-learn
+requests
+certifi
+statsmodels
