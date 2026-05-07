@@ -1,11 +1,5 @@
 flask   # builds the API
 pymongo # talks to MongoDB
-streamlit # builds the frontend
-plotly # draws the charts
-pandas # handles data tables
-sentence-transformers # converts text to vectors ( for RAG )
 python-dotenv # reads you.env secret keys
-scikit-learn
 requests
 certifi
-statsmodels

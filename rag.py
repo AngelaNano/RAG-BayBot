@@ -1,21 +1,45 @@
-from sentence_transformers import SentenceTransformer
 from database import get_collection
 import requests as http_requests
 import os
 
-# Load embedding model once at startup
-# This is small (90MB) and fine for Render's free tier
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+# Both models run on Hugging Face servers
+# Render loads zero ML models — stays well under 512MB
+HF_TOKEN = os.getenv('HF_API_TOKEN')
+HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
-# Hugging Face Inference API — model runs on HF servers, not Render
-# This means Render never loads torch or the full model into memory
-HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
-HF_HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
+EMBEDDING_API_URL = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
+GENERATION_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+
+
+def get_embedding(text):
+    """
+    Calls Hugging Face API to convert text to a vector.
+    Runs on HF servers — no local memory needed.
+    """
+    response = http_requests.post(
+        EMBEDDING_API_URL,
+        headers=HF_HEADERS,
+        json={"inputs": text}
+    )
+    result = response.json()
+    # HF embedding API returns a list of vectors
+    # For a single input it returns [[vector]] so we take [0]
+    if isinstance(result, list):
+        embedding = result[0]
+        # If it's a list of lists take the first one
+        if isinstance(embedding[0], list):
+            embedding = embedding[0]
+        return embedding
+    return None
 
 
 def generate_answer(prompt):
+    """
+    Calls Hugging Face API to generate an answer.
+    Runs on HF servers — no local memory needed.
+    """
     response = http_requests.post(
-        HF_API_URL,
+        GENERATION_API_URL,
         headers=HF_HEADERS,
         json={"inputs": prompt, "parameters": {"max_new_tokens": 200}}
     )
@@ -26,7 +50,14 @@ def generate_answer(prompt):
 
 
 def retrieve(query, top_k=5):
-    query_vector = embedder.encode(query).tolist()
+    """
+    Gets embedding from HF API then runs MongoDB vector search.
+    """
+    query_vector = get_embedding(query)
+
+    if not query_vector:
+        return []
+
     collection = get_collection()
 
     results = collection.aggregate([
