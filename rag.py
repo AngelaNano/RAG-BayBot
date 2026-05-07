@@ -11,7 +11,7 @@ embedder = SentenceTransformer("all-MiniLM-L6-v2")
 # ---- STEP 2: Load the answer-generation model ----
 # This is the AI that reads context and writes answers
 # "google/flan-t5-base" is a good lightweight model for Q&A
-generator = pipeline("text2text-generation", model="google/flan-t5-base")
+generator = pipeline("text2text-generation", model="google/flan-t5-small")
 
 def retrieve(query, top_k=5):
     """
