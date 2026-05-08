@@ -101,5 +101,5 @@ def ask():
 
 # This runs the server — debug=True means it auto-restarts when you save
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
 
