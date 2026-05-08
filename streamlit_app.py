@@ -1,35 +1,22 @@
 # streamlit_app.py
 import streamlit as st
 import plotly.express as px
-import requests
 import pandas as pd
-import os
+from database import get_collection, get_global_stats
+from rag import answer as rag_answer
 
 st.set_page_config(page_title="BayBot", layout="wide")
 st.title("🌊 BayBot — Water Quality Dashboard")
 st.caption("Real-time water quality monitoring powered by Flask, MongoDB, and Hugging Face RAG.")
 
-# ---- DETECT ENVIRONMENT ----
-# When running locally, use Flask API
-# When deployed on Streamlit Cloud, call database directly
-IS_LOCAL = os.getenv("IS_LOCAL", "false") == "true"
-API_URL = "http://localhost:5000" if IS_LOCAL else "https://rag-baybot.onrender.com"
-
 # ---- FETCH SENSOR DATA ----
+# Calls MongoDB directly — no Flask middleman needed on Streamlit Cloud
 try:
-    if IS_LOCAL:
-        sensor_response = requests.get(f"{API_URL}/api/sensors?limit=500")
-        data = sensor_response.json()
-    else:
-        from database import get_collection
-        collection = get_collection()
-        data = list(collection.find({}, {"_id": 0, "embedding": 0}).limit(500))
+    collection = get_collection()
+    data = list(collection.find({}, {"_id": 0, "embedding": 0}).limit(500))
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d %H:%M")
-    data_loaded = True
 except Exception as e:
-    df = pd.DataFrame()
-    data_loaded = False
     st.error(f"⚠️ Could not load sensor data: {e}")
     st.stop()
 
@@ -66,26 +53,16 @@ st.subheader("📊 Dataset Overview — All Records")
 st.caption("These figures represent the full dataset regardless of filters.")
 
 try:
-    if IS_LOCAL:
-        stats_response = requests.get(f"{API_URL}/api/stats")
-        stats = stats_response.json()
-    else:
-        from database import get_global_stats
-        stats = get_global_stats()
-    stats_loaded = True
-except Exception:
-    stats = {}
-    stats_loaded = False
-
-if stats_loaded:
+    stats = get_global_stats()
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("🌡️ Avg Temperature", f"{stats.get('avg_temperature', 'N/A')}°C",
                 delta=f"Max {stats.get('max_temperature', 'N/A')}°C", delta_color="off")
     col2.metric("🧂 Avg Salinity", f"{stats.get('avg_salinity', 'N/A')} ppt")
     col3.metric("💧 Avg Dissolved Oxygen", f"{stats.get('avg_dissolved_oxygen', 'N/A')} mg/L")
-    col4.metric("🌡️ Temp Range", f"{stats.get('min_temperature', 'N/A')}°C – {stats.get('max_temperature', 'N/A')}°C")
+    col4.metric("🌡️ Temp Range",
+                f"{stats.get('min_temperature', 'N/A')}°C – {stats.get('max_temperature', 'N/A')}°C")
     col5.metric("📁 Total Records", f"{stats.get('total_records', 0):,}")
-else:
+except Exception:
     st.warning("⚠️ Could not load global statistics.")
 
 st.divider()
@@ -133,19 +110,22 @@ col_a, col_b, col_c = st.columns(3)
 
 with col_a:
     fig_temp = px.line(filtered_df, x="date", y="temperature", color="location",
-                       title="Temperature (°C)", labels={"date": "Date", "temperature": "°C"})
+                       title="Temperature (°C)",
+                       labels={"date": "Date", "temperature": "°C"})
     fig_temp.update_layout(showlegend=False, plot_bgcolor="white")
     st.plotly_chart(fig_temp, use_container_width=True)
 
 with col_b:
     fig_sal = px.line(filtered_df, x="date", y="salinity", color="location",
-                      title="Salinity (ppt)", labels={"date": "Date", "salinity": "ppt"})
+                      title="Salinity (ppt)",
+                      labels={"date": "Date", "salinity": "ppt"})
     fig_sal.update_layout(showlegend=False, plot_bgcolor="white")
     st.plotly_chart(fig_sal, use_container_width=True)
 
 with col_c:
     fig_do = px.line(filtered_df, x="date", y="dissolved_oxygen", color="location",
-                     title="Dissolved Oxygen (mg/L)", labels={"date": "Date", "dissolved_oxygen": "mg/L"})
+                     title="Dissolved Oxygen (mg/L)",
+                     labels={"date": "Date", "dissolved_oxygen": "mg/L"})
     fig_do.update_layout(showlegend=False, plot_bgcolor="white")
     st.plotly_chart(fig_do, use_container_width=True)
 
@@ -159,9 +139,11 @@ x_axis = st.selectbox("X Axis", ["temperature", "salinity", "dissolved_oxygen"],
 y_axis = st.selectbox("Y Axis", ["dissolved_oxygen", "temperature", "salinity"],
                       format_func=lambda x: x.replace("_", " ").title())
 
-fig_scatter = px.scatter(filtered_df, x=x_axis, y=y_axis, color="location",
-                         opacity=0.6, trendline="ols",
-                         title=f"{x_axis.replace('_', ' ').title()} vs {y_axis.replace('_', ' ').title()}")
+fig_scatter = px.scatter(
+    filtered_df, x=x_axis, y=y_axis, color="location",
+    opacity=0.6, trendline="ols",
+    title=f"{x_axis.replace('_', ' ').title()} vs {y_axis.replace('_', ' ').title()}"
+)
 fig_scatter.update_layout(plot_bgcolor="white")
 st.plotly_chart(fig_scatter, use_container_width=True)
 
@@ -174,23 +156,16 @@ st.caption(
     "Source records and relevance scores are shown below every answer."
 )
 
-question = st.text_input("Your question",
-                         placeholder="e.g. What was the average temperature in March at North Bay?")
+question = st.text_input(
+    "Your question",
+    placeholder="e.g. What was the average temperature in March at North Bay?"
+)
 
 if st.button("Ask BayBot", type="primary"):
     if question:
         with st.spinner("Retrieving relevant sensor records and generating answer..."):
             try:
-                if IS_LOCAL:
-                    response = requests.post(
-                        f"{API_URL}/api/ask",
-                        json={"question": question},
-                        timeout=120
-                    )
-                    result = response.json()
-                else:
-                    from rag import answer as rag_answer
-                    result = rag_answer(question)
+                result = rag_answer(question)
             except Exception as e:
                 st.error(f"Error: {e}")
                 st.stop()
