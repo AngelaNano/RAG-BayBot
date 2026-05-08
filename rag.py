@@ -1,9 +1,8 @@
 from database import get_collection
 import requests as http_requests
 import os
+import numpy as np
 
-# Both models run on Hugging Face servers
-# Render loads zero ML models — stays well under 512MB
 HF_TOKEN = os.getenv('HF_API_TOKEN')
 HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
@@ -12,21 +11,14 @@ GENERATION_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5
 
 
 def get_embedding(text):
-    """
-    Calls Hugging Face API to convert text to a vector.
-    Runs on HF servers — no local memory needed.
-    """
     response = http_requests.post(
         EMBEDDING_API_URL,
         headers=HF_HEADERS,
         json={"inputs": text}
     )
     result = response.json()
-    # HF embedding API returns a list of vectors
-    # For a single input it returns [[vector]] so we take [0]
     if isinstance(result, list):
         embedding = result[0]
-        # If it's a list of lists take the first one
         if isinstance(embedding[0], list):
             embedding = embedding[0]
         return embedding
@@ -34,10 +26,6 @@ def get_embedding(text):
 
 
 def generate_answer(prompt):
-    """
-    Calls Hugging Face API to generate an answer.
-    Runs on HF servers — no local memory needed.
-    """
     response = http_requests.post(
         GENERATION_API_URL,
         headers=HF_HEADERS,
@@ -49,9 +37,20 @@ def generate_answer(prompt):
     return "No answer generated."
 
 
+def cosine_similarity(vec1, vec2):
+    """
+    Computes cosine similarity between two vectors.
+    Measures the angle between them — closer to 1.0 means more similar.
+    """
+    v1 = np.array(vec1)
+    v2 = np.array(vec2)
+    return float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
+
 def retrieve(query, top_k=5):
     """
-    Gets embedding from HF API then runs MongoDB vector search.
+    Converts query to vector via HF API, then compares against
+    stored embeddings in MongoDB using cosine similarity.
     """
     query_vector = get_embedding(query)
 
@@ -60,27 +59,26 @@ def retrieve(query, top_k=5):
 
     collection = get_collection()
 
-    results = collection.aggregate([
-        {
-            "$vectorSearch": {
-                "index": "vector_index",
-                "path": "embedding",
-                "queryVector": query_vector,
-                "numCandidates": 50,
-                "limit": top_k
-            }
-        },
-        {
-            "$project": {
-                "embedding": 0,
-                "description": 0,
-                "_id": 0,
-                "score": {"$meta": "vectorSearchScore"}
-            }
-        }
-    ])
+    # Fetch all records with their stored embeddings
+    records = list(collection.find(
+        {},
+        {"_id": 0, "date": 1, "temperature": 1, "salinity": 1,
+         "dissolved_oxygen": 1, "location": 1, "embedding": 1}
+    ))
 
-    return list(results)
+    # Compute cosine similarity between query and every record
+    for record in records:
+        record["score"] = cosine_similarity(query_vector, record["embedding"])
+
+    # Sort by score descending and return top_k
+    records.sort(key=lambda x: x["score"], reverse=True)
+    top_records = records[:top_k]
+
+    # Remove embedding from returned records — not needed by frontend
+    for record in top_records:
+        record.pop("embedding", None)
+
+    return top_records
 
 
 def build_context(records):
