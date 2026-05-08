@@ -7,7 +7,7 @@ HF_TOKEN = os.getenv('HF_API_TOKEN')
 HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 EMBEDDING_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
-GENERATION_API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-base"
+GENERATION_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn"
 
 
 def get_embedding(text):
@@ -33,20 +33,18 @@ def generate_answer(prompt):
         response = http_requests.post(
             GENERATION_API_URL,
             headers=HF_HEADERS,
-            json={"inputs": prompt, "parameters": {"max_new_tokens": 200}}
+            json={"inputs": prompt}
         )
-        print(f"Attempt {attempt}: status={response.status_code}, text={response.text[:300]}")
+        print(f"Attempt {attempt}: status={response.status_code}")
         if response.status_code == 200 and response.text:
             try:
                 result = response.json()
-                print(f"Parsed result type: {type(result)}, value: {str(result)[:200]}")
                 if isinstance(result, list) and len(result) > 0:
-                    if isinstance(result[0], dict):
-                        return result[0].get("generated_text", "No answer generated.")
-                    elif isinstance(result[0], str):
-                        return result[0]
-                elif isinstance(result, dict):
-                    return result.get("generated_text", str(result))
+                    # bart-large-cnn returns summary_text
+                    if "summary_text" in result[0]:
+                        return result[0]["summary_text"]
+                    elif "generated_text" in result[0]:
+                        return result[0]["generated_text"]
             except Exception as e:
                 print(f"Parse error: {e}")
         time.sleep(20)
