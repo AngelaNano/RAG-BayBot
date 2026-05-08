@@ -103,3 +103,19 @@ def ask():
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
 
+
+    @app.route("/api/test-embedding", methods=["GET"])
+    def test_embedding():
+        import requests as r
+        import os
+        HF_TOKEN = os.getenv('HF_API_TOKEN')
+        response = r.post(
+            "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2",
+            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            json={"inputs": "test water temperature"}
+        )
+        return jsonify({
+            "status": response.status_code,
+            "response": response.json() if response.text else "empty"
+        })
+
