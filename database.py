@@ -19,6 +19,20 @@ def get_collection():
     # This is where all 10,000 sensor records live
     return db["sensors"]
 
+def validate_record(record):
+    required_fields = ["date", "temperature", "salinity",
+                       "dissolved_oxygen", "location"]
+
+    for field in required_fields:
+        if field not in record:
+            raise ValueError(f"Missing required field: {field}")
+
+    numeric_fields = ["temperature", "salinity", "dissolved_oxygen"]
+    for field in numeric_fields:
+        if not isinstance(record[field], (int, float)):
+            raise ValueError(f"{field} must be a number")
+
+    return True
 
 
 
