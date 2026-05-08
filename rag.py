@@ -7,7 +7,7 @@ HF_TOKEN = os.getenv('HF_API_TOKEN')
 HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 EMBEDDING_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
-GENERATION_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3"
+GENERATION_API_URL = "https://router.huggingface.co/hf-inference/models/google/gemma-2-2b-it"
 
 
 def get_embedding(text):
@@ -44,7 +44,7 @@ def generate_answer(prompt):
                     return result[0].get("generated_text", "No answer generated.")
             except Exception:
                 pass
-        time.sleep(20)
+        time.sleep(30)
     return "The AI model is still loading. Please try again in 30 seconds."
 
 
