@@ -107,17 +107,14 @@ def answer(query):
             "grounded": False
         }
     context = build_context(relevant_records)
-    prompt = f"""You are a water quality analyst.
-Answer ONLY using the sensor data provided below.
-Include the specific dates and locations from the data in your answer.
-If the data does not contain enough information to answer, say so clearly.
+    prompt = f"""Use the sensor data provided below to answer this question. Include the specific dates and locations from the data in your answer. If the data does not contain enough information to answer, say so clearly.
 
-Sensor Data:
-{context}
+    Sensor Data:
+    {context}
 
-Question: {query}
+    Question: {query}
 
-Answer:"""
+    Answer:"""
     result = generate_answer(prompt)
     is_grounded = validate_answer(result, relevant_records)
     return {
