@@ -10,30 +10,49 @@ GENERATION_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5
 
 
 def get_embedding(text):
-    response = http_requests.post(
-        EMBEDDING_API_URL,
-        headers=HF_HEADERS,
-        json={"inputs": text}
-    )
-    result = response.json()
-    if isinstance(result, list):
-        embedding = result[0]
-        if isinstance(embedding[0], list):
-            embedding = embedding[0]
-        return embedding
+    import time
+    for attempt in range(3):  # retry up to 3 times
+        response = http_requests.post(
+            EMBEDDING_API_URL,
+            headers=HF_HEADERS,
+            json={"inputs": text}
+        )
+        # If response is empty or model is loading, wait and retry
+        if response.status_code == 503 or not response.text:
+            time.sleep(20)  # HF models need ~20s to wake up
+            continue
+        try:
+            result = response.json()
+            if isinstance(result, list):
+                embedding = result[0]
+                if isinstance(embedding[0], list):
+                    embedding = embedding[0]
+                return embedding
+        except Exception:
+            time.sleep(20)
+            continue
     return None
 
 
 def generate_answer(prompt):
-    response = http_requests.post(
-        GENERATION_API_URL,
-        headers=HF_HEADERS,
-        json={"inputs": prompt, "parameters": {"max_new_tokens": 200}}
-    )
-    result = response.json()
-    if isinstance(result, list):
-        return result[0].get("generated_text", "No answer generated.")
-    return "No answer generated."
+    import time
+    for attempt in range(3):
+        response = http_requests.post(
+            GENERATION_API_URL,
+            headers=HF_HEADERS,
+            json={"inputs": prompt, "parameters": {"max_new_tokens": 200}}
+        )
+        if response.status_code == 503 or not response.text:
+            time.sleep(20)
+            continue
+        try:
+            result = response.json()
+            if isinstance(result, list):
+                return result[0].get("generated_text", "No answer generated.")
+        except Exception:
+            time.sleep(20)
+            continue
+    return "The AI model is still loading. Please try again in 30 seconds."
 
 
 def retrieve(query, top_k=5):
