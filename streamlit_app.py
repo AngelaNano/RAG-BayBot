@@ -199,7 +199,8 @@ if st.button("Ask BayBot", type="primary"):
         with st.spinner("Retrieving relevant sensor records and generating answer..."):
             response = requests.post(
                 "https://rag-baybot.onrender.com/api/ask",
-                json={"question": question}
+                json={"question": question},
+                timeout=120
             )
             result = response.json()
 
