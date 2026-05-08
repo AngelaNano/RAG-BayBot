@@ -65,7 +65,7 @@ def test_embedding():
     )
     return jsonify({
         "status": response.status_code,
-        "response": response.json() if response.text else "empty"
+        "text": response.text[:500]
     })
 
 
