@@ -40,9 +40,14 @@ def generate_answer(prompt):
             try:
                 result = response.json()
                 if isinstance(result, list) and len(result) > 0:
-                    # bart-large-cnn returns summary_text
                     if "summary_text" in result[0]:
-                        return result[0]["summary_text"]
+                        text = result[0]["summary_text"]
+                        # Remove the prompt prefix if it appears in the response
+                        if "Answer:" in text:
+                            text = text.split("Answer:")[-1].strip()
+                        elif "say so clearly." in text:
+                            text = text.split("say so clearly.")[-1].strip()
+                        return text
                     elif "generated_text" in result[0]:
                         return result[0]["generated_text"]
             except Exception as e:
