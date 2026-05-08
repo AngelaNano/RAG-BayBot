@@ -20,10 +20,12 @@ def get_embedding(text):
         if response.status_code == 200 and response.text:
             result = response.json()
             if isinstance(result, list):
-                embedding = result[0]
-                if isinstance(embedding[0], list):
-                    embedding = embedding[0]
-                return embedding
+                # Flat list of floats — return directly
+                if isinstance(result[0], float):
+                    return result
+                # Nested list — return first item
+                elif isinstance(result[0], list):
+                    return result[0]
         time.sleep(5)
     return None
 
