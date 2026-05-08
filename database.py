@@ -34,5 +34,39 @@ def validate_record(record):
 
     return True
 
+def get_global_stats():
+    """
+    Computes summary statistics across ALL records in MongoDB using
+    the aggregation pipeline — without pulling any records into Python.
+    """
+    collection = get_collection()
+
+    pipeline = [
+        {
+            "$group": {
+                "_id": None,
+                "avg_temperature": {"$avg": "$temperature"},
+                "avg_salinity": {"$avg": "$salinity"},
+                "avg_dissolved_oxygen": {"$avg": "$dissolved_oxygen"},
+                "total_records": {"$sum": 1},
+                "max_temperature": {"$max": "$temperature"},
+                "min_temperature": {"$min": "$temperature"},
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "avg_temperature": {"$round": ["$avg_temperature", 2]},
+                "avg_salinity": {"$round": ["$avg_salinity", 2]},
+                "avg_dissolved_oxygen": {"$round": ["$avg_dissolved_oxygen", 2]},
+                "total_records": 1,
+                "max_temperature": {"$round": ["$max_temperature", 2]},
+                "min_temperature": {"$round": ["$min_temperature", 2]},
+            }
+        }
+    ]
+
+    result = list(collection.aggregate(pipeline))
+    return result[0] if result else {}
 
 
