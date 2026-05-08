@@ -7,7 +7,7 @@ HF_TOKEN = os.getenv('HF_API_TOKEN')
 HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 EMBEDDING_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
-GENERATION_API_URL = "https://router.huggingface.co/hf-inference/models/google/gemma-2-2b-it"
+GENERATION_API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-base"
 
 
 def get_embedding(text):
@@ -20,10 +20,8 @@ def get_embedding(text):
         if response.status_code == 200 and response.text:
             result = response.json()
             if isinstance(result, list):
-                # Flat list of floats — return directly
                 if isinstance(result[0], float):
                     return result
-                # Nested list — return first item
                 elif isinstance(result[0], list):
                     return result[0]
         time.sleep(5)
@@ -37,14 +35,21 @@ def generate_answer(prompt):
             headers=HF_HEADERS,
             json={"inputs": prompt, "parameters": {"max_new_tokens": 200}}
         )
+        print(f"Attempt {attempt}: status={response.status_code}, text={response.text[:300]}")
         if response.status_code == 200 and response.text:
             try:
                 result = response.json()
-                if isinstance(result, list):
-                    return result[0].get("generated_text", "No answer generated.")
-            except Exception:
-                pass
-        time.sleep(30)
+                print(f"Parsed result type: {type(result)}, value: {str(result)[:200]}")
+                if isinstance(result, list) and len(result) > 0:
+                    if isinstance(result[0], dict):
+                        return result[0].get("generated_text", "No answer generated.")
+                    elif isinstance(result[0], str):
+                        return result[0]
+                elif isinstance(result, dict):
+                    return result.get("generated_text", str(result))
+            except Exception as e:
+                print(f"Parse error: {e}")
+        time.sleep(20)
     return "The AI model is still loading. Please try again in 30 seconds."
 
 
