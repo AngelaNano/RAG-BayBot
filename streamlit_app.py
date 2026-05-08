@@ -1,8 +1,7 @@
-# streamlit_app.py
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-import database
+from database import get_collection, get_global_stats
 from rag import answer as rag_answer
 
 st.set_page_config(page_title="BayBot", layout="wide")
@@ -12,7 +11,7 @@ st.caption("Real-time water quality monitoring powered by Flask, MongoDB, and Hu
 # ---- FETCH SENSOR DATA ----
 # Calls MongoDB directly — no Flask middleman needed on Streamlit Cloud
 try:
-    collection = database.get_collection()
+    collection = get_collection()
     data = list(collection.find({}, {"_id": 0, "embedding": 0}).limit(500))
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d %H:%M")
@@ -54,6 +53,8 @@ st.caption("These figures represent the full dataset regardless of filters.")
 
 try:
     stats = get_global_stats()
+    if not stats:
+        st.warning("Stats returned empty")
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("🌡️ Avg Temperature", f"{stats.get('avg_temperature', 'N/A')}°C",
                 delta=f"Max {stats.get('max_temperature', 'N/A')}°C", delta_color="off")
