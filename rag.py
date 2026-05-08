@@ -5,7 +5,7 @@ import os
 HF_TOKEN = os.getenv('HF_API_TOKEN')
 HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
-EMBEDDING_API_URL = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
 GENERATION_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
 
