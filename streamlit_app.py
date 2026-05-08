@@ -2,7 +2,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-from database import get_collection, get_global_stats
+import database
 from rag import answer as rag_answer
 
 st.set_page_config(page_title="BayBot", layout="wide")
@@ -12,7 +12,7 @@ st.caption("Real-time water quality monitoring powered by Flask, MongoDB, and Hu
 # ---- FETCH SENSOR DATA ----
 # Calls MongoDB directly — no Flask middleman needed on Streamlit Cloud
 try:
-    collection = get_collection()
+    collection = database.get_collection()
     data = list(collection.find({}, {"_id": 0, "embedding": 0}).limit(500))
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d %H:%M")
