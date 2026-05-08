@@ -13,7 +13,7 @@ st.title("BayBot - Water Quality Dashboard")
 
 # ---- SECTION 1: Fetch and display sensor data ----
 # requests.get calls our Flask API — the frontend never touches MongoDB directly
-response = requests.get("http://localhost:5000/api/sensors?limit=500")
+response = requests.get("https://rag-baybot.onrender.com/api/sensors?limit=500")
 data = response.json()  # parse the JSON response
 df = pd.DataFrame(data)
 df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d %H:%M")
@@ -198,7 +198,7 @@ if st.button("Ask BayBot", type="primary"):
     if question:
         with st.spinner("Retrieving relevant sensor records and generating answer..."):
             response = requests.post(
-                "http://localhost:5000/api/ask",
+                "https://rag-baybot.onrender.com/api/ask",
                 json={"question": question}
             )
             result = response.json()
