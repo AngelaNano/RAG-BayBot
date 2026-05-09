@@ -286,6 +286,24 @@ and a Vector Search index for semantic similarity queries.
 
 ---
 
+## 🔧 Debugging & Development Notes
+
+During development the following debugging approaches were used:
+
+**MongoDB Connection Testing:**
+A standalone connection test script was used to verify MongoDB Atlas 
+connectivity before integrating with the main application:
+```python
+from pymongo import MongoClient
+import certifi
+client = MongoClient(uri, tlsCAFile=certifi.where())
+client.admin.command("ping")
+```
+This isolated the SSL certificate issue on macOS from the application 
+logic, confirming the fix before integrating it into database.py.
+
+---
+
 ## 🔮 Future Improvements
 
 - Upgrade the generation model to Claude or GPT-4 for higher answer accuracy 

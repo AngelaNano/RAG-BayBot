@@ -1,6 +1,37 @@
+# Environment variables — never commit credentials
 .env
+
+# Python cache files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
 .venv/
+
+# PyCharm project files
 .idea/
+
+# VS Code settings
+.vscode/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Hugging Face model cache
+.cache/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Test and debug files
+test_connection.py
+
+# Unnecessary config files
+runtime.txt
+.python-version
+.devcontainer/
