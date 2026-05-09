@@ -18,8 +18,11 @@ natural-language conversation.
 
 | Dashboard | Chatbot |
 |---|---|
-| ![Dashboard](screenshots/dashboard.png) | ![Chatbot](screenshots/chatbot.png) |
+| ![Dashboard](screenshots/dashboard.png) | ![Chatbot](screenshots/ChatBot.png) |
 
+| All Parameters | Correlation |
+|---|---|
+| ![Charts](screenshots/Charts.png) | ![Chart](screenshots/Chart%201.png) |
 ---
 
 ## 📋 Table of Contents
