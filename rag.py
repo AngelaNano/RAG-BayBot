@@ -35,7 +35,6 @@ def generate_answer(prompt):
             headers=HF_HEADERS,
             json={"inputs": prompt}
         )
-        print(f"Attempt {attempt}: status={response.status_code}")
         if response.status_code == 200 and response.text:
             try:
                 result = response.json()
@@ -50,8 +49,8 @@ def generate_answer(prompt):
                         return text
                     elif "generated_text" in result[0]:
                         return result[0]["generated_text"]
-            except Exception as e:
-                print(f"Parse error: {e}")
+            except Exception:
+                pass
         time.sleep(20)
     return "The AI model is still loading. Please try again in 30 seconds."
 
