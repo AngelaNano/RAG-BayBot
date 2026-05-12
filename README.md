@@ -195,6 +195,8 @@ curl -X POST https://rag-baybot.onrender.com/api/ask \
 ---
 
 ## 📁 Project Structure
+
+```
 baybot/
 │
 ├── app.py               # Flask REST API — defines all routes and handles
@@ -219,7 +221,7 @@ baybot/
 ├── .env.example         # Template showing required environment variables
 │                        # without exposing actual credentials
 └── .gitignore           # Prevents .env, caches, and venv from being committed
-
+```
 ---
 
 ## 🚀 How to Run Locally
